@@ -8,6 +8,7 @@ import { Film } from './entities/film.entity';
 import { ConfigService } from '@nestjs/config';
 import { FilmResponseDto } from './responses/film.response.dto';
 import { FilmsController } from './films.controller';
+import { of } from 'rxjs';
 
 
 jest.mock('@nestjs/axios');
@@ -21,7 +22,7 @@ describe('FilmsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [FilmsController],  // Asegúrate de que FilmsController esté en controllers
+      controllers: [FilmsController],
       providers: [
         FilmsService,
         {
@@ -34,7 +35,7 @@ describe('FilmsService', () => {
         },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('https://swapi.dev/api/films/') },
+          useValue: { get: jest.fn().mockReturnValue(`${process.env.SW_API_ENDPOINT}`) },
         }
       ],
     }).compile();
@@ -131,4 +132,48 @@ describe('FilmsService', () => {
     });
   });
 
+  describe('syncFilms', () => {
+    it('should synchronize films', async () => {
+
+      const apiData = { data: { results: [{ title: 'A New Hope', id: 1 }] } };
+
+      const filmsInDb: Film[] = [
+        { 
+          id: 2,
+          title: 'The Empire Strikes Back',
+          producer: 'Lucasfilm', 
+          episodeId: 3,
+          director: 'Irvin Kershner', 
+          releaseDate: new Date('1980-05-17'),
+          updatedAt: new Date('1980-05-17'),
+          deletedAt: null,
+          openingCrawl: 'It is a dark time for the Rebellion...',          
+        },
+      ];
+  
+      jest.spyOn(service['_httpService'], 'get' as keyof typeof service['_httpService']).mockResolvedValueOnce(apiData);
+      jest.spyOn(repository, 'find').mockResolvedValue(filmsInDb);
+  
+      const logSpy = jest.spyOn(console, 'log').mockImplementation();
+  
+      await service.syncFilms();
+  
+      expect(service.getAllFilms).toHaveBeenCalledWith(`${process.env.SW_API_ENDPOINT}`);
+      expect(repository.find).toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith('Successfully synchronized 3 films.');
+    });
+  
+    it('should handle errors during synchronization', async () => {
+      const errorMessage = 'Something went wrong!';
+
+      jest.spyOn(service['_httpService'], 'get' as keyof typeof service['_httpService']).mockRejectedValue(new Error(errorMessage));
+  
+
+      const logErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+  
+      await service.syncFilms();
+  
+      expect(logErrorSpy).toHaveBeenCalledWith(`Error synchronizing films: ${errorMessage}`);
+    });
+  })
 });

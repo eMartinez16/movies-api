@@ -78,7 +78,7 @@ export class FilmsController {
   @ApiOperation({ summary: 'Get film by id' })
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard) 
-  @Roles([Role.DEFAULT_USER])
+  @Roles(Role.DEFAULT_USER)
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
   async getFilmById(@Param('id', ParseIntPipe) id: number) {
@@ -87,7 +87,7 @@ export class FilmsController {
 
   @Post('')
   @UseGuards(AuthGuard('jwt'), RolesGuard) 
-  @Roles([Role.ADMIN_USER])
+  @Roles(Role.ADMIN_USER)
   @ApiOperation({ summary: 'Create new film' })
   @ApiBody({ description: 'Film information', type: CreateFilmDto })
   @ApiCommonResponses()
@@ -108,7 +108,7 @@ export class FilmsController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard) 
-  @Roles([Role.ADMIN_USER])
+  @Roles(Role.ADMIN_USER)
   @ApiOperation({ summary: 'Update film information' })
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
@@ -129,7 +129,7 @@ export class FilmsController {
 
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard) 
-  @Roles([Role.ADMIN_USER])
+  @Roles(Role.ADMIN_USER)
   @ApiOperation({ summary: 'Delete film' })
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
@@ -140,12 +140,11 @@ export class FilmsController {
   }
 
   @Get('sync')
-  @UseGuards(AuthGuard('jwt'), RolesGuard) 
-  @Roles([Role.ADMIN_USER])
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN_USER)
   @ApiOperation({ summary: 'Synchronize films from API and DB' })
   @ApiCommonResponses()
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
   async syncFilms() {
     return await this.filmsService.syncFilms();
   }

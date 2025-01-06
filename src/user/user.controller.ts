@@ -16,7 +16,7 @@ export class UserController {
   constructor(private readonly _userService: UserService) {}
 
   @Post()
-  @Roles([Role.ADMIN_USER])
+  @Roles(Role.ADMIN_USER)
    @ApiResponse({
       status: 200,
       description: 'User created successfully'
