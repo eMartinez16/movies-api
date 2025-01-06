@@ -45,26 +45,25 @@ describe('AuthService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should hash the password and create the user', async () => {
+    it('should create the user', async () => {
       (userService.findByEmail as jest.Mock).mockResolvedValue(null);
-      (userService.create as jest.Mock).mockResolvedValue({});
-
-      const spyHash = jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
-
+      (userService.create as jest.Mock).mockResolvedValue({ message: 'User created successfully' });
+        
       const result = await authService.register({
         email: 'test@example.com',
         name: 'Test',
-        password: '12345678',
-        role: Role.DEFAULT_USER,
-      });
-
-      expect(spyHash).toHaveBeenCalledWith('12345678', 10);
-      expect(userService.create).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        name: 'Test',
         password: 'hashedPassword',
-        role: 'user',
+        role: Role.DEFAULT_USER,  
+      });  
+     
+  
+      expect(userService.create).toHaveBeenCalledWith({
+        name: 'Test',
+        email: 'test@example.com',
+        password: 'hashedPassword',
+        role: Role.DEFAULT_USER,  
       });
+  
       expect(result).toEqual({ message: 'User created successfully' });
     });
   });
@@ -95,14 +94,15 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'hashedPassword',
       };
-      (userService.findByEmail as jest.Mock).mockResolvedValue(mockUser);
+      (userService.findByEmail as jest.Mock).mockResolvedValue(mockUser);    
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true);
+      jest.spyOn(jwtService, 'sign').mockReturnValue('mockedToken');
+
 
       const result = await authService.login({ email: 'test@example.com', password: '123456' });
 
       expect(jwtService.sign).toHaveBeenCalledWith({
-        id: mockUser.id,
-        name: mockUser.name,
+        userId: mockUser.id
       });
       expect(result).toEqual({
         user: { id: 1, name: 'Test User', email: 'test@example.com' },

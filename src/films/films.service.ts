@@ -1,4 +1,3 @@
-// src/films/films.service.ts
 
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
@@ -11,7 +10,6 @@ import { Repository } from 'typeorm';
 import { UpdateFilmDto } from './dto/update-film.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { FilmResponseDto } from './responses/film.response.dto';
-import { FilmMapper } from './film.mapper';
 
 @Injectable()
 export class FilmsService {
@@ -22,40 +20,68 @@ export class FilmsService {
     private readonly _httpService: HttpService,
     private readonly _configService: ConfigService,
     @InjectRepository(Film)
-    private readonly _filmRepository: Repository<Film>
+    private readonly _filmRepository: Repository<Film>,
   ) {
     this.swApiUrl = this._configService.get('SW_API_ENDPOINT');
+  }
+
+  mapFilm(film): FilmResponseDto{
+    return {
+      id: film.id,
+      title: film.title,
+      producer: film.producer,
+      episodeId: film.episodeId,
+      director: film.director,
+      releaseDate: film.releaseDate,
+      openingCrawl: film.openingCrawl,
+    };
+  }
+
+  toDtoArray(films: Film[]): FilmResponseDto[] {
+    return films.map(film => this.mapFilm(film));
   }
 
   async getAllFilms() {
     try {
       const apiData = await firstValueFrom(this._httpService.get(this.swApiUrl));
+      
       const filmsOnDb = await this._filmRepository.find();
 
-      const filmsDto = FilmMapper.toDtoArray([...filmsOnDb, ...apiData.data.results]);
-
+      const filmsDto = this.toDtoArray([
+        ...filmsOnDb, 
+        ...(apiData.data || [])
+      ]);
       return { films: filmsDto };
     } catch (error) {
       throw new Error(`Error fetching films: ${error.message}`);
     }
   }
 
+ 
+
   async getFilmById(id: number) {
     try {
       const existsOnDb = await this._filmRepository.findOne({ where: { id } });
-
-      if (existsOnDb) return FilmMapper.toDto(existsOnDb);
-
+  
+      if (existsOnDb) return this.mapFilm(existsOnDb);
+  
       const response = await firstValueFrom(this._httpService.get(`${this.swApiUrl}${id}`));
-      return FilmMapper.toDto(response.data);
+  
+      return this.mapFilm(response.data);
+      
     } catch (error) {
-      throw new Error(`Error fetching film with ID ${id}: ${error.message}`);
+      if (error.response && error.response.status === 404) {
+        throw new NotFoundException('Film not found');
+      }
+  
+      throw new Error('An unexpected error occurred while fetching the film');
     }
   }
 
   async create(dto: CreateFilmDto): Promise<{ message: string }> {
     try {
       await this._filmRepository.save(dto);
+      
       return { message: 'Film created successfully' };
     } catch (error) {
       throw new Error('Error creating film');
@@ -84,8 +110,12 @@ export class FilmsService {
 
       if (!film) throw new NotFoundException();
 
-      return await this._filmRepository.softDelete(film.id);
+      await this._filmRepository.softDelete(film.id)
+
+      return 'Film successfully deleted'
+
     } catch (error) {
+      console.log(error);
       throw new Error('Error deleting film');
     }
   }

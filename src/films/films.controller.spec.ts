@@ -6,8 +6,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Film } from './entities/film.entity';
 import { ConfigService } from '@nestjs/config';
-import { FilmMapper } from './mappers/film.mapper';
 import { FilmResponseDto } from './responses/film.response.dto';
+import { FilmsController } from './films.controller';
+
 
 jest.mock('@nestjs/axios');
 jest.mock('@nestjs/config');
@@ -15,10 +16,12 @@ jest.mock('@nestjs/typeorm');
 
 describe('FilmsService', () => {
   let service: FilmsService;
+  let controller: FilmsController;
   let repository: Repository<Film>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      controllers: [FilmsController],  // Asegúrate de que FilmsController esté en controllers
       providers: [
         FilmsService,
         {
@@ -32,39 +35,100 @@ describe('FilmsService', () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue('https://swapi.dev/api/films/') },
-        },
+        }
       ],
     }).compile();
-
+  
     service = module.get<FilmsService>(FilmsService);
+    controller = module.get<FilmsController>(FilmsController);
     repository = module.get<Repository<Film>>(getRepositoryToken(Film));
   });
 
   describe('getAllFilms', () => {
     it('should return all films including data from API and DB', async () => {
-      // Mocking the response from the HTTP call
+      
       const apiData = { data: { results: [{ title: 'A New Hope', id: 1 }] } };
-      jest.spyOn(service['_httpService'], 'get').mockResolvedValueOnce(apiData as any);
+      jest.spyOn(service['_httpService'], 'get' as keyof typeof service['_httpService']).mockResolvedValueOnce(apiData);
 
-      // Mocking the films from the DB
+
+
       const filmsInDb: Film[] = [
-        { id: 2, title: 'The Empire Strikes Back', producer: 'Lucasfilm', episode_id: 5, director: 'Irvin Kershner', releaseDate: '1980-05-17', openingCrawl: 'It is a dark time for the Rebellion...' },
+        { 
+          id: 2,
+          title: 'The Empire Strikes Back',
+          producer: 'Lucasfilm', 
+          episodeId: 3,
+          director: 'Irvin Kershner', 
+          releaseDate: new Date('1980-05-17'),
+          updatedAt: new Date('1980-05-17'),
+          deletedAt: null,
+          openingCrawl: 'It is a dark time for the Rebellion...',          
+        },
       ];
 
       jest.spyOn(repository, 'find').mockResolvedValueOnce(filmsInDb);
 
-      // Call the service method
       const result = await service.getAllFilms();
 
-      // We expect the result to include the DB and API films
       const expectedResult: FilmResponseDto[] = [
-        FilmMapper.toDto(filmsInDb[0]), // DB film
-        FilmMapper.toDto({ id: 1, title: 'A New Hope', producer: '', episode_id: 4, director: '', releaseDate: '', openingCrawl: '' } as any), // API film
+        service.mapFilm(filmsInDb[0]),
+        service.mapFilm({ id: 1, title: 'A New Hope', producer: '', episode_id: 4, director: '', releaseDate: '', openingCrawl: '' } as any), // API film
       ];
 
       expect(result.films).toEqual(expectedResult);
     });
   });
 
-  // Aquí también puedes agregar los tests para los demás métodos como `getFilmById`, `create`, etc.
+  describe('getFilmById', () => {
+    it('should return a film by ID', async () => {
+      const film: FilmResponseDto = {
+        id: 1,
+        title: 'A New Hope',
+        producer: 'Lucasfilm',
+        episodeId: 4,
+        director: 'George Lucas',
+        releaseDate: new Date('1977-05-25'),
+        openingCrawl: 'It is a period of civil war...',
+      };
+
+      jest.spyOn(service, 'getFilmById').mockResolvedValueOnce(film);
+
+      const result = await controller.getFilmById(1);
+
+      expect(result.title).toBe('A New Hope');
+      expect(result.id).toBe(1);
+    });
+  });
+
+  describe('createFilm', () => {
+    it('should create a film', async () => {
+      const createFilmDto = {
+        title: 'A New Hope',
+        producer: 'Lucasfilm',
+        episodeId: 4,
+        director: 'George Lucas',
+        releaseDate: new Date('1977-05-25'),
+        openingCrawl: 'It is a period of civil war...',
+      };
+
+      jest.spyOn(service, 'create').mockResolvedValueOnce({
+        message: 'Film created successfully',
+      });
+
+      const result = await controller.createFilm(createFilmDto);
+
+      expect(result.message).toBe('Film created successfully');
+    });
+  });
+
+  describe('deleteFilm', () => {
+    it('should delete a film by ID', async () => {
+      jest.spyOn(service, 'delete').mockResolvedValueOnce('Film deleted successfully');
+
+      const result = await controller.deleteFilm(1);
+
+      expect(result).toBe('Film deleted successfully');
+    });
+  });
+
 });

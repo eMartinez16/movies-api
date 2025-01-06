@@ -156,9 +156,9 @@ describe('UserService', () => {
       const existingUser = { id: 1, email: 'emiliano@example.com', name: 'Emiliano Martinez' };
 
       mockUserRepository.findOne.mockResolvedValue(existingUser);
-      mockUserRepository.softDelete.mockResolvedValue({ affected: 1 });
+      mockUserRepository.softDelete.mockResolvedValue("User successfully deleted");
 
-      expect(await userService.delete(1)).toEqual({ affected: 1 });
+      expect(await userService.delete(1)).toEqual("User successfully deleted");
     });
 
     it('should throw an error if user to delete is not found', async () => {

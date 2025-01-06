@@ -2,7 +2,7 @@ up:
 	docker-compose up --build -d 
 down:
 	docker-compose down
-logs-backend:
+logs_backend:
 	docker logs --folow nest_app
 logs_sql:
 	docker logs --follow mysql_db

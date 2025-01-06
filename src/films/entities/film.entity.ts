@@ -17,18 +17,16 @@ export class Film {
     @Column({ type: 'text', name: 'opening_crawl'})
     openingCrawl: string;
 
-    @Column({ type: 'int' })
-    episode_id: number;
-
-
+    @Column({ type: 'int', name: 'episode_id'})
+    episodeId: number;
 
 
     @CreateDateColumn({ name: 'release_date'})
     releaseDate: Date;
 
-    @UpdateDateColumn()
+    @UpdateDateColumn({ name: 'updated_at'})
     updatedAt: Date;
 
-    @DeleteDateColumn()
+    @DeleteDateColumn({ name: 'deleted_at'})
     deletedAt: Date;
 }

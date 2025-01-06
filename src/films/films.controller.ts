@@ -8,6 +8,8 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } 
 import { ApiCommonResponses } from '../core/decorators/api.responses.decorator';
 import { FilmResponseDto } from './responses/film.response.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from 'src/core/guards/roles.guard';
+
 
 @ApiTags('Films') 
 @Controller('films')
@@ -52,6 +54,7 @@ export class FilmsController {
     return await this.filmsService.getAllFilms();
   }
 
+  @Get(':id')
   @ApiResponse({
     status: 200,
     description: 'Film detail',
@@ -68,11 +71,14 @@ export class FilmsController {
       },
     },
   })
-  @Get(':id')
-  @Roles(Role.DEFAULT_USER)
+  @ApiResponse({
+    status: 404,
+    description: 'Film not found',  
+  })
   @ApiOperation({ summary: 'Get film by id' })
   @ApiBearerAuth()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard) 
+  @Roles([Role.DEFAULT_USER])
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
   async getFilmById(@Param('id', ParseIntPipe) id: number) {
@@ -80,7 +86,8 @@ export class FilmsController {
   }
 
   @Post('')
-  @Roles(Role.ADMIN_USER)
+  @UseGuards(AuthGuard('jwt'), RolesGuard) 
+  @Roles([Role.ADMIN_USER])
   @ApiOperation({ summary: 'Create new film' })
   @ApiBody({ description: 'Film information', type: CreateFilmDto })
   @ApiCommonResponses()
@@ -100,25 +107,19 @@ export class FilmsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN_USER)
+  @UseGuards(AuthGuard('jwt'), RolesGuard) 
+  @Roles([Role.ADMIN_USER])
   @ApiOperation({ summary: 'Update film information' })
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
+  @ApiBody({
+    description: 'Film data to update',
+    type: UpdateFilmDto,   
+  })
   @ApiResponse({
     status: 200,
     description: 'Film updated successfully.',
-    type: FilmResponseDto,
-    schema: {
-      example: {
-        id: 1,
-        title: 'A New Hope - Updated',
-        producer: 'Gary Kurtz, Rick McCallum',
-        episode_id: 4,
-        director: 'George Lucas',
-        releaseDate: '1977-05-25',
-        opening_crawl: 'It is a period of civil war... Rebel spaceships...'
-      },
-    },
+    type: FilmResponseDto
   })
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
@@ -127,7 +128,8 @@ export class FilmsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN_USER)
+  @UseGuards(AuthGuard('jwt'), RolesGuard) 
+  @Roles([Role.ADMIN_USER])
   @ApiOperation({ summary: 'Delete film' })
   @ApiParam({ name: 'id', description: 'film id', type: 'number' })
   @ApiCommonResponses()
@@ -138,7 +140,8 @@ export class FilmsController {
   }
 
   @Get('sync')
-  @Roles(Role.ADMIN_USER)
+  @UseGuards(AuthGuard('jwt'), RolesGuard) 
+  @Roles([Role.ADMIN_USER])
   @ApiOperation({ summary: 'Synchronize films from API and DB' })
   @ApiCommonResponses()
   @ApiBearerAuth()

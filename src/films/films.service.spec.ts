@@ -31,8 +31,8 @@ describe('FilmsService', () => {
         },
         {
           provide: ConfigService,
-          useValue: { get: jest.fn().mockReturnValue('https://swapi.dev/api/films/') },
-        },
+          useValue: { get: jest.fn().mockReturnValue(process.env.SW_API_ENDPOINT) },
+        }
       ],
     }).compile();
 
@@ -70,7 +70,7 @@ describe('FilmsService', () => {
         id: 1,
         title: 'The Phantom Menace',
         producer: 'Lucasfilm',
-        episode_id: 1,
+        episodeId: 1,
         director: 'George Lucas',
         releaseDate: new Date('1999-05-19'),
         openingCrawl: 'A long time ago in a galaxy far, far away...',
@@ -116,7 +116,7 @@ describe('FilmsService', () => {
         id: 1,
         title: 'The Phantom Menace',
         producer: 'Lucasfilm',
-        episode_id: 1,
+        episodeId: 1,
         director: 'George Lucas',
         releaseDate: new Date('1999-05-19'),
         openingCrawl: 'A long time ago in a galaxy far, far away...',

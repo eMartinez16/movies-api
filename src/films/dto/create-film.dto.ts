@@ -25,11 +25,12 @@ export class CreateFilmDto {
     openingCrawl: string;
 
     @IsNumber()
-    @ApiProperty({ example: '34', description: 'Id of episode' })
+    @ApiProperty({ example: '3', description: 'Id of episode' })
     episodeId: number;
 
     @IsDate()
-    @ApiProperty({ example: '19-11-1995', description: 'The release date of the film' })
+    @Transform(({ value }) => new Date(value))
+    @ApiProperty({   example: '1995-11-19T00:00:00.000Z',  description: 'The release date of the film' })
     releaseDate: Date;
 
 }

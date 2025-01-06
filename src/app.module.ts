@@ -35,16 +35,18 @@ import { ScheduleModule } from '@nestjs/schedule';
       },
     }),
     UserModule,
-    AuthModule,
     FilmsModule,
+    AuthModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [
     AppService, 
-    { 
-    useClass: RolesGuard, provide: APP_GUARD
-  }],
+    // { 
+    //   useClass: RolesGuard, 
+    //   provide: APP_GUARD
+    // }
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

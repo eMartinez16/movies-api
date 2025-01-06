@@ -42,7 +42,6 @@ export class AuthService {
         throw new UnauthorizedException("Invalid email");
       
 
-      console.log(password, userFinded);
       const invalidPassword = await bcrypt.compare(
         password,
         userFinded.password
@@ -52,9 +51,8 @@ export class AuthService {
       if (!invalidPassword)
         throw new UnauthorizedException("Invalid password");
       
-      const payload = {
-        id: userFinded.id,
-        name: userFinded.name,
+      const payload: JWTPayload = {
+        userId: userFinded.id
       };
 
       delete userFinded.password;

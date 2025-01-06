@@ -15,7 +15,7 @@ export class UserService {
   ) {}
 
 
-  async create({ email, password, name }: CreateUserDto): Promise<RegisterResponse> {
+  async create({ email, password, name, role }: CreateUserDto): Promise<RegisterResponse> {
     try {
       const user = await this.findByEmail(email);
   
@@ -31,6 +31,7 @@ export class UserService {
       await this._userRepository.save({
         name,
         email,
+        role,
         password: hashedPassword,
       });
   
@@ -56,11 +57,19 @@ export class UserService {
   }
 
   async findOne(id: number) {
-    return await this._userRepository.findOne({ 
-      where: { 
-        id 
-      }
-    });
+    try {
+      const user = await this._userRepository.findOne({ 
+        where: { 
+          id 
+        }
+      });
+
+      if (!user) throw new NotFoundException('User not found');
+
+      return user;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
@@ -93,9 +102,11 @@ export class UserService {
     try {      
       const user = await this.findOne(id);
 
-      if (!user) throw new NotFoundException();
+      if (!user) throw new NotFoundException('User not found');
 
-      return await this._userRepository.softDelete(user.id)
+      await this._userRepository.softDelete(user.id)
+
+      return 'User successfully deleted'
     } catch(error) {
       throw error;
     }
