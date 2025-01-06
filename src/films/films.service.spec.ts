@@ -2,17 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FilmsService } from './films.service';
 import { HttpService } from '@nestjs/axios';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 import { Film } from './entities/film.entity';
 import { ConfigService } from '@nestjs/config';
-import { FilmResponseDto } from './responses/film.response.dto';
-import { AxiosRequestHeaders, AxiosResponse } from 'axios';
-import { Observable, of } from 'rxjs';
-
-// Define la estructura de la respuesta de la API
-interface ApiResponse {
-  results: Array<{ title: string; id: number; producer?: string; episode_id?: number; director?: string; releaseDate?: string; openingCrawl?: string }>;
-}
+import { CreateFilmDto } from './dto/create-film.dto';
+import { UpdateFilmDto } from './dto/update-film.dto';
+import { NotFoundException } from '@nestjs/common';
 
 jest.mock('@nestjs/axios');
 jest.mock('@nestjs/config');
@@ -28,7 +23,7 @@ describe('FilmsService', () => {
         FilmsService,
         {
           provide: HttpService,
-          useValue: { get: jest.fn() },  // Mock del método 'get'
+          useValue: { get: jest.fn() },
         },
         {
           provide: getRepositoryToken(Film),
@@ -45,41 +40,107 @@ describe('FilmsService', () => {
     repository = module.get<Repository<Film>>(getRepositoryToken(Film));
   });
 
-  describe('getAllFilms', () => {
-    it('should return all films including data from API and DB', async () => {
-      // Datos de la respuesta de la API mockeada
-      const apiData: ApiResponse = { results: [{ title: 'A New Hope', id: 1 }] };
-
-      // Creamos la respuesta completa de Axios
-      const axiosResponse: AxiosResponse<ApiResponse> = {
-        data: apiData,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as AxiosRequestHeaders}
+  describe('create', () => {
+    it('should create a new film and return a success message', async () => {
+      const createFilmDto: CreateFilmDto = {
+        title: 'The Phantom Menace',
+        producer: 'Lucasfilm',
+        episodeId: 1,
+        director: 'George Lucas',
+        releaseDate: new Date('1999-05-19'),
+        openingCrawl: 'A long time ago in a galaxy far, far away...',
       };
 
-      // Mockeamos la función 'get' para que retorne la respuesta mockeada
-      jest.spyOn(service['_httpService'], 'get').mockResolvedValueOnce(of(axiosResponse));
+      jest.spyOn(repository, 'save').mockResolvedValueOnce(createFilmDto as any);
 
-      // Mockeamos los datos de los films en la base de datos
-      const filmsInDb: Film[] = [
-        { id: 2, title: 'The Empire Strikes Back', producer: 'Lucasfilm', episode_id: 5, director: 'Irvin Kershner', releaseDate: '1980-05-17', openingCrawl: 'It is a dark time for the Rebellion...' },
-      ];
+      const result = await service.create(createFilmDto);
 
-      jest.spyOn(repository, 'find').mockResolvedValueOnce(filmsInDb);
+      expect(result).toEqual({ message: 'Film created successfully' });
+      expect(repository.save).toHaveBeenCalledWith(createFilmDto);
+    });
+  });
 
-      // Llamamos al método del servicio
-      const result = await service.getAllFilms();
+  describe('update', () => {
+    it('should update a film and return the updated film', async () => {
+      const updateFilmDto: UpdateFilmDto = {
+        title: 'The Phantom Menace - Updated',
+      };
 
-      // Resultado esperado (incluir tanto los films de la DB como de la API)
-      const expectedResult: FilmResponseDto[] = [
-        new FilmResponseDto(filmsInDb[0]), // Film de la DB
-        new FilmResponseDto({ id: 1, title: 'A New Hope' } as any), // Film de la API
-      ];
+      const existingFilm: Film = {
+        id: 1,
+        title: 'The Phantom Menace',
+        producer: 'Lucasfilm',
+        episode_id: 1,
+        director: 'George Lucas',
+        releaseDate: new Date('1999-05-19'),
+        openingCrawl: 'A long time ago in a galaxy far, far away...',
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
 
-      // Comprobamos que el resultado es el esperado
-      expect(result.films).toEqual(expectedResult);
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(existingFilm);
+      jest.spyOn(repository, 'save').mockResolvedValueOnce({
+        ...existingFilm,
+        ...updateFilmDto,
+      });
+
+      const result = await service.update(1, updateFilmDto);
+
+      expect(result).toEqual({
+        id: 1,
+        title: 'The Phantom Menace - Updated',
+        producer: 'Lucasfilm',
+        episode_id: 1,
+        director: 'George Lucas',
+        releaseDate: new Date('1999-05-19'),
+        openingCrawl: 'A long time ago in a galaxy far, far away...',
+      });
+      expect(repository.save).toHaveBeenCalledWith({
+        ...existingFilm,
+        ...updateFilmDto,
+      });
+    });
+
+    it('should throw NotFoundException if film does not exist', async () => {
+      const updateFilmDto: UpdateFilmDto = { title: 'Non-existent Film' };
+
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+
+      await expect(service.update(999, updateFilmDto)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('should delete a film and return the result', async () => {
+      const existingFilm: Film = {
+        id: 1,
+        title: 'The Phantom Menace',
+        producer: 'Lucasfilm',
+        episode_id: 1,
+        director: 'George Lucas',
+        releaseDate: new Date('1999-05-19'),
+        openingCrawl: 'A long time ago in a galaxy far, far away...',
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(existingFilm);
+      jest.spyOn(repository, 'softDelete').mockResolvedValueOnce({
+        affected: 1,
+        raw: [],     
+        generatedMaps: [], 
+      } as UpdateResult);
+
+      const result = await service.delete(1);
+
+      expect(result).toEqual({ affected: 1 });
+      expect(repository.softDelete).toHaveBeenCalledWith(existingFilm.id);
+    });
+
+    it('should throw NotFoundException if film does not exist', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
+
+      await expect(service.delete(999)).rejects.toThrow(NotFoundException);
     });
   });
 });

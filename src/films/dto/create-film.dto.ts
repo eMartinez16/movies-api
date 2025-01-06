@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsDate, IsString, MinLength } from "class-validator";
+import { IsDate, IsNumber, IsString, MinLength } from "class-validator";
 
 export class CreateFilmDto {
 
@@ -23,6 +23,10 @@ export class CreateFilmDto {
     @IsString()
     @ApiProperty({ example: 'The adventures of Woody, a pull-string cowboy toy, and his friends in Andy’s room', description: 'The opening text crawl for the film' })
     openingCrawl: string;
+
+    @IsNumber()
+    @ApiProperty({ example: '34', description: 'Id of episode' })
+    episodeId: number;
 
     @IsDate()
     @ApiProperty({ example: '19-11-1995', description: 'The release date of the film' })
