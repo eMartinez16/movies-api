@@ -6,7 +6,6 @@ config();
 
 const configService = new ConfigService();
 
-console.log(__dirname);
 const options: DataSourceOptions = {
   type: 'mysql',
   host: configService.get<string>('DATABASE_HOST', 'mysql.railway.internal'),

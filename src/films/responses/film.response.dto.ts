@@ -17,7 +17,7 @@ export class FilmResponseDto {
   director: string;
 
   @ApiProperty({ description: 'Release date of the film' })
-  releaseDate: string;
+  releaseDate: Date;
 
   @ApiProperty({ description: 'Opening crawl of the film' })
   openingCrawl: string;

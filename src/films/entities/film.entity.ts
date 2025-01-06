@@ -17,6 +17,11 @@ export class Film {
     @Column({ type: 'text', name: 'opening_crawl'})
     openingCrawl: string;
 
+    @Column({ type: 'int' })
+    episode_id: number;
+
+
+
 
     @CreateDateColumn({ name: 'release_date'})
     releaseDate: Date;

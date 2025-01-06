@@ -1,3 +1,5 @@
+// src/films/films.service.ts
+
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
@@ -8,31 +10,31 @@ import { Film } from './entities/film.entity';
 import { Repository } from 'typeorm';
 import { UpdateFilmDto } from './dto/update-film.dto';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { FilmResponseDto } from './responses/film.response.dto';
+import { FilmMapper } from './film.mapper';
 
 @Injectable()
 export class FilmsService {
-    swApiUrl: string =  '';
-    private readonly logger = new Logger(FilmsService.name);
-
+  swApiUrl: string = '';
+  private readonly logger = new Logger(FilmsService.name);
 
   constructor(
     private readonly _httpService: HttpService,
     private readonly _configService: ConfigService,
     @InjectRepository(Film)
     private readonly _filmRepository: Repository<Film>
-  ){
-      this.swApiUrl = this._configService.get('SW_API_ENDPOINT')
+  ) {
+    this.swApiUrl = this._configService.get('SW_API_ENDPOINT');
   }
 
   async getAllFilms() {
     try {
       const apiData = await firstValueFrom(this._httpService.get(this.swApiUrl));
-
       const filmsOnDb = await this._filmRepository.find();
 
-      return {
-        films: [...filmsOnDb, ...apiData.data],     
-      }      
+      const filmsDto = FilmMapper.toDtoArray([...filmsOnDb, ...apiData.data.results]);
+
+      return { films: filmsDto };
     } catch (error) {
       throw new Error(`Error fetching films: ${error.message}`);
     }
@@ -40,14 +42,12 @@ export class FilmsService {
 
   async getFilmById(id: number) {
     try {
-      const existsOnDb = await this._filmRepository.findOne({
-        where: { id }
-      });
+      const existsOnDb = await this._filmRepository.findOne({ where: { id } });
 
-      if (existsOnDb) return existsOnDb;
+      if (existsOnDb) return FilmMapper.toDto(existsOnDb);
 
       const response = await firstValueFrom(this._httpService.get(`${this.swApiUrl}${id}`));
-      return response.data;
+      return FilmMapper.toDto(response.data);
     } catch (error) {
       throw new Error(`Error fetching film with ID ${id}: ${error.message}`);
     }
@@ -55,29 +55,23 @@ export class FilmsService {
 
   async create(dto: CreateFilmDto): Promise<{ message: string }> {
     try {
-   
       await this._filmRepository.save(dto);
-  
-      return {
-        message: "Film created successfully",
-      };
+      return { message: 'Film created successfully' };
     } catch (error) {
       throw new Error('Error creating film');
-    }       
+    }
   }
 
-
-
   async update(id: number, updateUserDto: UpdateFilmDto) {
-    try {      
+    try {
       const film = await this.getFilmById(id);
-  
+
       if (!film) throw new NotFoundException();
-      
+
       const modifiedFilm = Object.assign(film, updateUserDto);
-  
+
       await this._filmRepository.save(modifiedFilm);
-  
+
       return await this.getFilmById(id);
     } catch (error) {
       throw new Error('Error updating film');
@@ -85,14 +79,14 @@ export class FilmsService {
   }
 
   async delete(id: number) {
-    try {      
+    try {
       const film = await this.getFilmById(id);
 
       if (!film) throw new NotFoundException();
 
-      return await this._filmRepository.softDelete(film.id)
-    } catch(error) {
-      throw new Error('Error deleting film');    
+      return await this._filmRepository.softDelete(film.id);
+    } catch (error) {
+      throw new Error('Error deleting film');
     }
   }
 
@@ -100,10 +94,7 @@ export class FilmsService {
   async syncFilms() {
     this.logger.log('Synchronizing films from API and DB...');
     try {
-      const apiData = await firstValueFrom(
-        this._httpService.get('https://swapi.dev/api/films/'),
-      );
-
+      const apiData = await firstValueFrom(this._httpService.get('https://swapi.dev/api/films/'));
       const filmsOnDb = await this._filmRepository.find();
 
       const combinedFilms = [...filmsOnDb, ...apiData.data.results];
