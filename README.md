@@ -41,10 +41,9 @@ Make sure you have Docker and `make` installed on your machine.
 
 Useful endpoints:
 
-${hostUrl}/docs
-
-${hostUrl}/api/v1/auth/login
-${hostUrl}/auth/register
+- hostUrl/docs
+- hostUrl/api/v1/auth/login
+- hostUrl/auth/register
 
 Postman collection to test:
 
