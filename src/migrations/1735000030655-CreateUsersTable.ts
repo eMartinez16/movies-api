@@ -1,5 +1,6 @@
-import { Role } from "src/core/enum/role.enum";
+import { Role } from "../core/enum/role.enum";
 import { MigrationInterface, QueryRunner, Table } from "typeorm";
+import * as bcrypt from 'bcrypt';
 
 export class CreateUsersTable1735000030655 implements MigrationInterface {
 
@@ -9,7 +10,7 @@ export class CreateUsersTable1735000030655 implements MigrationInterface {
             columns: [
                 { name: 'id', type: 'int', isPrimary: true, isGenerated: true, generationStrategy: 'increment' },
                 { name: 'name', type: 'varchar' },
-                { name: 'email', type: 'varchar' , isUnique: true},
+                { name: 'email', type: 'varchar' },
                 { name: 'password', type: 'varchar', length: '60' },
                 {
                     name: 'role',
@@ -33,7 +34,7 @@ export class CreateUsersTable1735000030655 implements MigrationInterface {
                     isNullable: true,
                 },
             ]
-        }));
+        }));     
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

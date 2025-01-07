@@ -43,6 +43,31 @@ export class AuthController {
         },
       },
     })
+    @ApiResponse({
+      status: 401,
+      description: 'Error: Unauthorized - Invalid email',
+      schema: {
+        oneOf: [
+          {
+            type: 'object',
+            properties: {
+              message: { type: 'string', example: 'Invalid email' },
+              error: { type: 'string', example: 'Unauthorized' },
+              statusCode: { type: 'number', example: 401 }
+            }
+          },
+          {
+            type: 'object',
+            properties: {
+              message: { type: 'string', example: 'Invalid password' },
+              error: { type: 'string', example: 'Unauthorized' },
+              statusCode: { type: 'number', example: 401 }
+            }
+          }
+        ]
+      },
+    })
+
     login(@Body() loginDto: LoginAuthDto) {
       return this._authService.login(loginDto);
     }

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from  "bcryptjs";
-import { UserService } from 'src/user/user.service';
+import { UserService } from '../../user/user.service';
 import { LoginAuthDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { LoginResponse, RegisterResponse } from './responses/auth.responses';
 import { RegisterDto } from './dto/register.dto';
+import { JWTPayload } from './interfaces/jwt.payload';
 
 
 @Injectable()
@@ -20,17 +21,11 @@ export class AuthService {
       if (user)
         throw new BadRequestException("Email already exists");
       
-  
-      
-      const hashedPassword = await bcrypt.hash(
-        `${password.trim().replace(/\s+/g, '')}`,
-        10
-      );
 
       await this._userService.create({
         name,
         email,
-        password: hashedPassword,
+        password,
         role
       });
   
@@ -47,7 +42,6 @@ export class AuthService {
         throw new UnauthorizedException("Invalid email");
       
 
-      console.log({password, userFinded}) 
       const invalidPassword = await bcrypt.compare(
         password,
         userFinded.password
@@ -57,9 +51,8 @@ export class AuthService {
       if (!invalidPassword)
         throw new UnauthorizedException("Invalid password");
       
-      const payload = {
-        id: userFinded.id,
-        name: userFinded.name,
+      const payload: JWTPayload = {
+        userId: userFinded.id
       };
 
       delete userFinded.password;

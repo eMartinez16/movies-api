@@ -10,6 +10,7 @@ export class CreateFilmsTable1735056105389 implements MigrationInterface {
                 { name: 'title', type: 'varchar', isUnique: true},
                 { name: 'producer', type: 'varchar' },
                 { name: 'director', type: 'varchar' },
+                { name: 'episode_id', type: 'int' },
                 { name: 'opening_crawl', type: 'text' },              
                 {
                     name: "release_date",
