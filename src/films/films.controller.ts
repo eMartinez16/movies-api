@@ -54,6 +54,17 @@ export class FilmsController {
     return await this.filmsService.getAllFilms();
   }
 
+
+  @Get('/sync')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(Role.ADMIN_USER)
+  @ApiOperation({ summary: 'Synchronize films from API and DB' })
+  @ApiCommonResponses()
+  @ApiBearerAuth()
+  async syncFilms() {
+    return await this.filmsService.syncFilms();
+  }
+
   @Get(':id')
   @ApiResponse({
     status: 200,
@@ -139,13 +150,4 @@ export class FilmsController {
     return await this.filmsService.delete(id);
   }
 
-  @Get('sync')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.ADMIN_USER)
-  @ApiOperation({ summary: 'Synchronize films from API and DB' })
-  @ApiCommonResponses()
-  @ApiBearerAuth()
-  async syncFilms() {
-    return await this.filmsService.syncFilms();
-  }
 }

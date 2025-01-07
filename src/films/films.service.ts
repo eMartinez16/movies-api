@@ -124,12 +124,14 @@ export class FilmsService {
   async syncFilms() {
     this.logger.log('Synchronizing films from API and DB...');
     try {
-      const apiData = await firstValueFrom(this._httpService.get('https://swapi.dev/api/films/'));
+      const apiData = await firstValueFrom(this._httpService.get(`${process.env.SW_API_ENDPOINT}`));
       const filmsOnDb = await this._filmRepository.find();
 
-      const combinedFilms = [...filmsOnDb, ...apiData.data.results];
+      const combinedFilms = [...filmsOnDb, ...apiData.data];
 
       this.logger.log(`Successfully synchronized ${combinedFilms.length} films.`);
+
+      return combinedFilms;
     } catch (error) {
       this.logger.error(`Error synchronizing films: ${error.message}`);
     }
